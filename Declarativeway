@@ -1,0 +1,56 @@
+pipeline{
+    
+agent any
+
+tools{
+maven "maven3.8.1"
+}
+
+stages{
+
+stage('pulling the code from github'){
+    steps{
+   git branch: 'development', credentialsId: '42b30cb7-6fa3-4569-ae50-67cdfb3cafaf', url: 'https://github.com/kuchipudidevops/maven-web-application.git' 
+} 
+}
+stage('build'){
+    steps{
+    sh "mvn clean package"
+}
+}
+stage('pull sonar qube report'){
+    steps{
+    sh "mvn clean sonar:sonar"
+}
+}
+stage('upload artficats to nexus'){
+    steps{
+    sh "mvn clean deploy"
+}
+}
+stage('Deploy to cointainer'){
+    steps{
+    sshagent(['f53a97a1-dc01-49e1-ab86-662dd0c80b6c']) {
+ sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@3.238.77.235://opt/apache-tomcat-9.0.50/webapps/"
+    }   
+}
+}
+}// stages closing
+
+post{
+    
+success{
+    emailext body: '''build status: sucess
+Thanks and regards
+Harish Kumar
+9071501765''', subject: 'build status', to: 'harishk276@gmail.com'
+}
+
+failure{
+    emailext body: '''build status: failure
+Thanks and regards
+Harish Kumar
+9071501765''', subject: 'build status', to: 'harishk276@gmail.com'
+}
+}    
+}//pipeline closing
